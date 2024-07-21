@@ -1,0 +1,123 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+
+public class DisplayImage extends JPanel {
+    private BufferedImage image;
+    private ArrayList<MyPoint> points;
+
+    private void rerender () {
+        new Thread(() -> {
+            while (true) {
+                repaint();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
+
+    public DisplayImage (BufferedImage image) {
+        this.image = this.drawBorders(image);
+        this.points = new ArrayList<>();
+        rerender();
+        this.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                MyPoint myPoint = new MyPoint(e.getX(), e.getY());
+                points.add(myPoint);
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.drawImage(
+                this.image,
+                0,
+                0,
+                this.image.getWidth(),
+                this.image.getHeight(),
+                this);
+        g.setColor(Color.BLUE);
+        System.out.println(this.points.size());
+        for (MyPoint myPoint : this.points) {
+            g.fillOval(myPoint.getX(), myPoint.getY(), 5, 5);
+        }
+
+    }
+
+    private BufferedImage negative (BufferedImage bufferedImage) {
+        for (int x = 0; x < bufferedImage.getWidth(); x++) {
+            for (int y = 0; y < bufferedImage.getHeight(); y++) {
+                Color currentColor = new Color(bufferedImage.getRGB(x, y));
+                int red = 255 - currentColor.getRed();
+                int green = 255 - currentColor.getGreen();
+                int blue = 255 - currentColor.getBlue();
+                Color updatedColor = new Color(red, green, blue);
+                bufferedImage.setRGB(x, y, updatedColor.getRGB());
+            }
+        }
+        return bufferedImage;
+    }
+
+    private BufferedImage drawBorders (BufferedImage bufferedImage) {
+        int threshold = 70;
+        for (int x = 0; x < bufferedImage.getWidth() - 1; x++) {
+            for (int y = 0; y < bufferedImage.getHeight() - 1; y++) {
+                boolean border = false;
+                Color currentPixel = new Color(bufferedImage.getRGB(x, y));
+                Color rightNeighbor = new Color(bufferedImage.getRGB(x + 1, y));
+                int redDiff = Math.abs(currentPixel.getRed() - rightNeighbor.getRed());
+                int greenDiff = Math.abs(currentPixel.getGreen() - rightNeighbor.getGreen());
+                int blueDiff = Math.abs(currentPixel.getBlue() - rightNeighbor.getBlue());
+                int totalDiff = redDiff + greenDiff + blueDiff;
+                if (totalDiff > threshold) {
+                    border = true;
+                } else {
+                    Color downNeighbor = new Color(bufferedImage.getRGB(x, y + 1));
+                    redDiff = Math.abs(currentPixel.getRed() - downNeighbor.getRed());
+                    greenDiff = Math.abs(currentPixel.getGreen() - downNeighbor.getGreen());
+                    blueDiff = Math.abs(currentPixel.getBlue() - downNeighbor.getBlue());
+                    totalDiff = redDiff + greenDiff + blueDiff;
+                    if (totalDiff > threshold) {
+                         border = true;
+                    }
+                }
+                if (border) {
+                    bufferedImage.setRGB(x, y, Color.BLACK.getRGB());
+                } else {
+                    bufferedImage.setRGB(x, y, Color.WHITE.getRGB());
+                }
+            }
+        }
+        return bufferedImage;
+    }
+}
